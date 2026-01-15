@@ -59,7 +59,7 @@ export default function HoraDoPatoPage() {
       where('jaJulgado', '==', false),
       orderBy('createdAt', 'desc')
     );
-
+    
     const snap = await getDocs(q);
     const list: FoDoc[] = snap.docs.map((d) => ({
       id: d.id,

@@ -19,7 +19,7 @@ type Candidate = {
   nomeLower: string; // calculado no front
 };
 
-type FoTipo = 'positivo' | 'negativo';
+type FoTipo = 'negativo' | 'positivo';
 
 type UserProfileDoc = {
   posto?: string;
@@ -32,7 +32,7 @@ export default function FoPage() {
   const { user } = useAuth();
 
   // form state
-  const [tipo, setTipo] = useState<FoTipo>('positivo');
+  const [tipo, setTipo] = useState<FoTipo>('negativo');
   const [descricao, setDescricao] = useState('');
   const [candidateQuery, setCandidateQuery] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
@@ -181,7 +181,7 @@ export default function FoPage() {
       setDescricao('');
       setCandidateQuery('');
       setSelectedCandidate(null);
-      setTipo('positivo');
+      setTipo('negativo');
 
       router.push('/dashboard');
     } catch (e: any) {
@@ -218,8 +218,8 @@ export default function FoPage() {
                 onChange={(e) => setTipo(e.target.value as FoTipo)}
                 className="w-full rounded-xl bg-black/30 border border-white/15 px-4 py-3 outline-none"
               >
-                <option value="positivo">Positivo</option>
-                <option value="negativo">Negativo</option>
+                <option value="negativo">negativo</option>
+                <option value="positivo">positivo</option>
               </select>
             </div>
 
