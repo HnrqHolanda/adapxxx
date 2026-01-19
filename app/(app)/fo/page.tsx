@@ -2,13 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  addDoc,
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-} from 'firebase/firestore';
+import { addDoc, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,6 +20,8 @@ type UserProfileDoc = {
   nomeGuerra?: string;
   email?: string;
 };
+
+type StatusControle = 'NAO_JULGADO' | 'JULGADO_PENDENTE_CONTROLE' | 'EM_CONTROLE';
 
 export default function FoPage() {
   const router = useRouter();
@@ -112,9 +108,7 @@ export default function FoPage() {
     // 1) se já veio do contexto, usa
     const postoCtx = (user as any)?.posto?.trim?.() ?? '';
     const nomeCtx = (user as any)?.nomeGuerra?.trim?.() ?? '';
-    if (postoCtx && nomeCtx) {
-      return `${postoCtx} ${nomeCtx}`.trim();
-    }
+    if (postoCtx && nomeCtx) return `${postoCtx} ${nomeCtx}`.trim();
 
     // 2) fallback: buscar em users/{uid}
     if (!user?.uid) return '';
@@ -150,7 +144,6 @@ export default function FoPage() {
       setSaving(true);
 
       const lancadoPor = await resolveLancadoPor();
-
       if (!lancadoPor) {
         setError(
           'Seu perfil (posto e nome de guerra) não foi encontrado no Firestore. Faça logout e cadastre novamente, ou complete seu cadastro.'
@@ -158,22 +151,37 @@ export default function FoPage() {
         return;
       }
 
+      const statusControle: StatusControle = 'NAO_JULGADO';
+
       await addDoc(collection(db, 'fos'), {
+        // FO base
         tipo,
         descricao: descricao.trim(),
 
+        // candidato
         candidateId: selectedCandidate.id,
         candidateNome: selectedCandidate.Nome,
         candidateNomeLower: selectedCandidate.nomeLower,
         candidateTipo: selectedCandidate.Tipo,
 
+        // lançador
         lancadoPor,
         lancadoPorUid: user.uid,
 
+        // julgamento
         punicao: '',
         jaJulgado: false,
         julgadoPor: '',
+        julgadoAt: null,
 
+        // ✅ controle disciplinar (NOVOS CAMPOS)
+        entrouEmControle: false,
+        controleId: null,
+        controleFechadoAt: null,
+        controleFechadoPor: null,
+        statusControle,
+
+        // timestamps
         createdAt: Date.now(),
       });
 
@@ -243,7 +251,8 @@ export default function FoPage() {
                       onClick={() => handleSelectCandidate(c)}
                       className="w-full text-left px-4 py-3 hover:bg-white/5 transition"
                     >
-                      {c.Nome} <span className="text-white/50 text-xs">({c.Tipo})</span>
+                      {c.Nome}{' '}
+                      <span className="text-white/50 text-xs">({c.Tipo})</span>
                     </button>
                   ))}
                 </div>
@@ -264,7 +273,9 @@ export default function FoPage() {
 
             {/* descricao */}
             <div className="space-y-2">
-              <label className="text-xs tracking-widest text-white/70">DESCRIÇÃO DO FATO OBSERVADO</label>
+              <label className="text-xs tracking-widest text-white/70">
+                DESCRIÇÃO DO FATO OBSERVADO
+              </label>
               <textarea
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}

@@ -6,10 +6,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 
-// ✅ ADICIONE
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-
 export default function CadastroPage() {
   const [formData, setFormData] = useState({
     email: '',
@@ -81,32 +77,11 @@ export default function CadastroPage() {
     const nomeGuerra = formData.nomeGuerra.trim();
     const posto = formData.posto;
 
+    // ✅ O signUp no AuthContext já cria o usuário com role: 'user'
+    // Não precisa fazer nada extra aqui
     const result = await signUp(email, formData.password, nomeGuerra, posto);
 
-    // ✅ Se o Auth criou o usuário, garantir perfil no Firestore
     if (result.success) {
-      try {
-        const current = auth.currentUser;
-        if (current) {
-          await setDoc(
-            doc(db, 'users', current.uid),
-            {
-              uid: current.uid,
-              email,
-              nomeGuerra,
-              posto,
-              createdAt: Date.now(),
-            },
-            { merge: true }
-          );
-        }
-      } catch (err) {
-        console.error('Falha ao salvar perfil em users/{uid}:', err);
-        // aqui você pode decidir:
-        // - bloquear acesso (return com erro)
-        // - ou só logar e seguir
-      }
-
       setLoading(false);
       router.push('/dashboard');
       return;

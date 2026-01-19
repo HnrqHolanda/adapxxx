@@ -15,10 +15,12 @@ interface UserData {
   email: string;
   nomeGuerra: string;
   posto: string;
+  role: 'user' | 'admin';
 }
 
 interface AuthContextType {
   user: UserData | null;
+  userRole: 'user' | 'admin';
   loading: boolean;
   signUp: (
     email: string,
@@ -43,6 +45,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserData | null>(null);
+  const [userRole, setUserRole] = useState<'user' | 'admin'>('user');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -57,29 +60,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
             const data = userDoc.data() as Omit<UserData, 'uid' | 'email'>;
 
-            setUser({
+            const userData: UserData = {
               uid: firebaseUser.uid,
               email: firebaseUser.email ?? '',
               nomeGuerra: data.nomeGuerra ?? '',
               posto: data.posto ?? '',
-            });
+              role: data.role ?? 'user',
+            };
+
+            setUser(userData);
+            setUserRole(userData.role);
           } else {
-            // Caso raro (usuário existe no Auth mas não tem doc no Firestore)
-            // Você pode criar automaticamente ou apenas setar defaults:
-            setUser({
+            const userData: UserData = {
               uid: firebaseUser.uid,
               email: firebaseUser.email ?? '',
               nomeGuerra: '',
               posto: '',
-            });
+              role: 'user',
+            };
+
+            setUser(userData);
+            setUserRole('user');
           }
         } else {
           setUser(null);
+          setUserRole('user');
         }
       } catch (err) {
         console.error('Erro no onAuthStateChanged ao ler Firestore:', err);
-        // Importante: não travar a app
         setUser(null);
+        setUserRole('user');
       } finally {
         setLoading(false);
       }
@@ -101,7 +111,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email,
         nomeGuerra,
         posto,
-        createdAt: Date.now(), // (melhor que new Date() pra evitar timezone/serialização)
+        role: 'user',
+        createdAt: Date.now(),
       });
 
       return { success: true };
@@ -137,10 +148,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     await firebaseSignOut(auth);
+    setUser(null);
+    setUserRole('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, userRole, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
